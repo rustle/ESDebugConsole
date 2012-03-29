@@ -130,7 +130,7 @@
 
 - (void)iOSInit
 {
-	UIWindow *window = [UIApplication sharedApplication].keyWindow;
+	UIWindow *window = [[[UIApplication sharedApplication] delegate] window];
 	if (!window)
 		window = [[UIApplication sharedApplication].windows objectAtIndex:0];
 	if (window == nil)
