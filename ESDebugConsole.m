@@ -33,7 +33,6 @@
 NSString *const kESDebugConsoleAllLogsKey = @"ESDebugConsoleAllLogsKey";
 
 @interface ESDebugConsole ()
-- (void)commonInit;
 @end
 
 @implementation ESDebugConsole
@@ -55,18 +54,12 @@ NSString *const kESDebugConsoleAllLogsKey = @"ESDebugConsoleAllLogsKey";
 	self = [super init];
 	if (self)
 	{
-		[self commonInit];
 		if ([self respondsToSelector:@selector(iOSInit)])
 		{
 			[self performSelector:@selector(iOSInit)];
 		}
 	}
 	return self;
-}
-
-- (void)commonInit
-{
-	
 }
 
 - (void)dealloc
@@ -86,58 +79,48 @@ NSString *const kESDebugConsoleAllLogsKey = @"ESDebugConsoleAllLogsKey";
 	aslmsg q, m;
 	int i;
 	const char *key, *val;
-	NSMutableDictionary *consoleLog;
-	
-	q = asl_new(ASL_TYPE_QUERY);
-	
-	consoleLog = [NSMutableDictionary new];
-	
-	NSMutableArray *allLogs = [NSMutableArray new];
-	[consoleLog setObject:allLogs forKey:kESDebugConsoleAllLogsKey];
-	
-	aslresponse r = asl_search(NULL, q);
-	while (NULL != (m = aslresponse_next(r)))
-	{
-		NSMutableDictionary *tmpDict = [NSMutableDictionary dictionary];
-		
-		for (i = 0; (NULL != (key = asl_key(m, i))); i++)
+	NSMutableDictionary *consoleLog = [NSMutableDictionary new];
+	@autoreleasepool {
+		q = asl_new(ASL_TYPE_QUERY);
+		NSMutableArray *allLogs = [NSMutableArray new];
+		aslresponse r = asl_search(NULL, q);
+		while (NULL != (m = aslresponse_next(r)))
 		{
-			NSString *keyString = [NSString stringWithUTF8String:(char *)key];
-			
-			val = asl_get(m, key);
-			
-			if (val != NULL)
+			NSMutableDictionary *tmpDict = [NSMutableDictionary dictionary];
+			for (i = 0; (NULL != (key = asl_key(m, i))); i++)
 			{
-				NSString *string = [NSString stringWithUTF8String:val];
-				
-				if (string != nil)
-					[tmpDict setObject:string forKey:keyString];
+				NSString *keyString = [NSString stringWithUTF8String:(char *)key];
+				val = asl_get(m, key);
+				if (val != NULL)
+				{
+					NSString *string = [NSString stringWithUTF8String:val];
+					if (string != nil)
+					{
+						[tmpDict setObject:string forKey:keyString];
+					}
+				}
+			}
+			ESConsoleEntry *entry = [[ESConsoleEntry alloc] initWithDictionary:tmpDict];
+			if (entry != nil)
+			{
+				NSMutableArray *logEntries = [consoleLog objectForKey:entry.applicationIdentifier];
+				if (logEntries == nil)
+				{
+					logEntries = [NSMutableArray new];
+					consoleLog[entry.applicationIdentifier] = logEntries;
+				}
+				[logEntries addObject:entry];
+				[allLogs addObject:entry];
 			}
 		}
-		
-		ESConsoleEntry *entry = [[ESConsoleEntry alloc] initWithDictionary:tmpDict];
-		if (entry != nil)
+		aslresponse_free(r);
+		for (NSMutableArray *logEntries in [consoleLog allValues])
 		{
-			NSMutableArray *logEntries = [consoleLog objectForKey:entry.applicationIdentifier];
-			if (logEntries == nil)
-			{
-				logEntries = [NSMutableArray new];
-				[consoleLog setObject:logEntries forKey:entry.applicationIdentifier];
-			}
-			[logEntries addObject:entry];
-			logEntries = [consoleLog objectForKey:kESDebugConsoleAllLogsKey];
-			[logEntries addObject:entry];
+			[logEntries sortUsingDescriptors:[NSArray arrayWithObjects:[NSSortDescriptor sortDescriptorWithKey:@"date" ascending:NO], nil]];
 		}
+		consoleLog[kESDebugConsoleAllLogsKey] = allLogs;
 	}
-	aslresponse_free(r);
-	
-	for (NSMutableArray *logEntries in [consoleLog allValues])
-	{
-		[logEntries sortUsingDescriptors:[NSArray arrayWithObjects:[NSSortDescriptor sortDescriptorWithKey:@"date" ascending:NO], nil]];
-	}
-	
-	NSDictionary *retVal = [NSDictionary dictionaryWithDictionary:consoleLog];
-	
+	NSDictionary *retVal = [consoleLog copy];
 	return retVal;
 }
 
@@ -145,7 +128,7 @@ NSString *const kESDebugConsoleAllLogsKey = @"ESDebugConsoleAllLogsKey";
 
 @implementation NSArray (ConsoleFormatting)
 
-- (NSString *)formattedConsoleString
+- (NSString *)esdebug_formattedConsoleString
 {
 	NSMutableString *logs = [NSMutableString stringWithString:@"Console Logs: (\n"];
 	for (ESConsoleEntry *entry in self)

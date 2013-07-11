@@ -85,9 +85,13 @@
 	[picker setToRecipients:self.recipients];
 	[picker setSubject:self.subject];
 	if (self.attachment)
+	{
 		[picker addAttachmentData:self.attachment mimeType:@"octet/stream" fileName:@"console.log"];
+	}
 	if (self.message)
+	{
 		[picker setMessageBody:self.message isHTML:NO];
+	}
 	[self.navigationController presentViewController:picker animated:YES completion:nil];
 }
 

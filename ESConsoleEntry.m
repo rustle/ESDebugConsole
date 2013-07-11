@@ -20,33 +20,33 @@
 #import <asl.h>
 
 @implementation ESConsoleEntry
-@synthesize message=_message;
-@synthesize shortMessage=_shortMessage;
-@synthesize applicationIdentifier=_applicationIdentifier;
-@synthesize date=_date;
 
 #pragma mark -
 
-- (id)initWithDictionary:(NSDictionary *)dictionary
+- (instancetype)initWithDictionary:(NSDictionary *)dictionary
 {
 	self = [super init];
-	if (self != nil)
+	if (self)
 	{
 		if (dictionary == nil)
 		{
-			self = nil;
 			return nil;
 		}
-		
-		self.message = [dictionary objectForKey:[NSString stringWithCString:ASL_KEY_MSG encoding:NSUTF8StringEncoding]];
-		if (self.message.length > 200)
-			self.shortMessage = [self.message substringToIndex:200];
+		_message = [dictionary objectForKey:[NSString stringWithCString:ASL_KEY_MSG encoding:NSUTF8StringEncoding]];
+		if (_message.length > 200)
+		{
+			_shortMessage = [_message substringToIndex:200];
+		}
 		else
-			self.shortMessage = self.message;
-		self.applicationIdentifier = [dictionary objectForKey:[NSString stringWithCString:ASL_KEY_FACILITY encoding:NSUTF8StringEncoding]];
-		if (self.applicationIdentifier == nil)
-			self.applicationIdentifier = [dictionary objectForKey:[NSString stringWithCString:ASL_KEY_SENDER encoding:NSUTF8StringEncoding]];
-		self.date = [NSDate dateWithTimeIntervalSince1970:[[dictionary objectForKey:[NSString stringWithCString:ASL_KEY_TIME encoding:NSUTF8StringEncoding]] doubleValue]];
+		{
+			_shortMessage = self.message;
+		}
+		_applicationIdentifier = [dictionary objectForKey:[NSString stringWithCString:ASL_KEY_FACILITY encoding:NSUTF8StringEncoding]];
+		if (_applicationIdentifier == nil)
+		{
+			_applicationIdentifier = [dictionary objectForKey:[NSString stringWithCString:ASL_KEY_SENDER encoding:NSUTF8StringEncoding]];
+		}
+		_date = [NSDate dateWithTimeIntervalSince1970:[[dictionary objectForKey:[NSString stringWithCString:ASL_KEY_TIME encoding:NSUTF8StringEncoding]] doubleValue]];
 	}
 	return self;
 }

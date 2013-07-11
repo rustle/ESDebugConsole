@@ -18,11 +18,7 @@
 
 #import <Foundation/Foundation.h>
 
-#if __has_feature(attribute_objc_ivar_unused)
-	#define CATEGORY_IVAR __attribute__((unused))
-#else
-	#define CATEGORY_IVAR
-#endif
+#define CATEGORY_IVAR __attribute__((unused))
 
 extern NSString *const kESDebugConsoleAllLogsKey;
 
@@ -57,5 +53,5 @@ extern NSString *const kESDebugConsoleAllLogsKey;
 @end
 
 @interface NSArray (ConsoleFormatting)
-- (NSString *)formattedConsoleString;
+- (NSString *)esdebug_formattedConsoleString;
 @end

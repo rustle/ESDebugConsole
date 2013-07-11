@@ -24,20 +24,20 @@
  * Gesture recognizer will by default be a rotation gesture recognizer attached to the window
  * If you set your own it's target must be [ESDebugConsole sharedDebugConsole] with action gestureRecognized:
  */
-@property (nonatomic, retain) UIGestureRecognizer *gestureRecognizer;
+@property (nonatomic) UIGestureRecognizer *gestureRecognizer;
 /**
  * Used by view controllers when displayed in UIPopoverController
  */
-@property (nonatomic, assign) CGSize consoleSizeInPopover;
+@property (nonatomic) CGSize consoleSizeInPopover;
 
 - (void)showFromView:(UIView *)view;
 
 @end
 
 @interface ESDebugConsole (iOS_GUI_Private)
-@property (nonatomic, retain) UIWindow *window;
-@property (nonatomic, retain) UIPopoverController *popoverController;
-@property (nonatomic, retain) UINavigationController *navigationController;
+@property (nonatomic) UIWindow *window;
+@property (nonatomic) UIPopoverController *popoverController;
+@property (nonatomic) UINavigationController *navigationController;
 - (void)iOSInit;
 - (void)iOSDealloc;
 @end
