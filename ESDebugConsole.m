@@ -19,7 +19,6 @@
 #import "ESDebugConsole.h"
 #import <asl.h>
 #import "ESConsoleEntry.h"
-#import "ARCLogic.h"
 
 //#define ASL_KEY_TIME      "Time"
 //#define ASL_KEY_HOST      "Host"
@@ -51,15 +50,7 @@ NSString *const kESDebugConsoleAllLogsKey = @"ESDebugConsoleAllLogsKey";
 	return sharedConsole;
 }
 
-NO_ARC(
-	   // Little bit of dummy proofing for pre arc singleton
-	   - (id)retain { return self; }
-	   - (oneway void)release { }
-	   - (id)autorelease { return self; }
-	   - (NSUInteger)retainCount { return NSUIntegerMax; }
-)
-
-- (id)init
+- (instancetype)init
 {
 	self = [super init];
 	if (self)
@@ -84,9 +75,6 @@ NO_ARC(
 	{
 		[self performSelector:@selector(iOSDealloc)];
 	}
-	NO_ARC(
-		   [super dealloc];
-		   )
 }
 
 #pragma mark -
@@ -106,7 +94,6 @@ NO_ARC(
 	
 	NSMutableArray *allLogs = [NSMutableArray new];
 	[consoleLog setObject:allLogs forKey:kESDebugConsoleAllLogsKey];
-	NO_ARC([allLogs release];)
 	
 	aslresponse r = asl_search(NULL, q);
 	while (NULL != (m = aslresponse_next(r)))
@@ -136,12 +123,10 @@ NO_ARC(
 			{
 				logEntries = [NSMutableArray new];
 				[consoleLog setObject:logEntries forKey:entry.applicationIdentifier];
-				NO_ARC([logEntries release];)
 			}
 			[logEntries addObject:entry];
 			logEntries = [consoleLog objectForKey:kESDebugConsoleAllLogsKey];
 			[logEntries addObject:entry];
-			NO_ARC([entry release];)
 		}
 	}
 	aslresponse_free(r);
@@ -152,8 +137,6 @@ NO_ARC(
 	}
 	
 	NSDictionary *retVal = [NSDictionary dictionaryWithDictionary:consoleLog];
-	
-	NO_ARC([consoleLog release];)
 	
 	return retVal;
 }

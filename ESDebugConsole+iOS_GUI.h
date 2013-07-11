@@ -30,6 +30,8 @@
  */
 @property (nonatomic, assign) CGSize consoleSizeInPopover;
 
+- (void)showFromView:(UIView *)view;
+
 @end
 
 @interface ESDebugConsole (iOS_GUI_Private)

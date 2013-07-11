@@ -18,7 +18,6 @@
 
 #import <UIKit/UIKit.h>
 #import "ESDebugConsole+iOS_GUI.h"
-#import "ARCLogic.h"
 #import "ESConsoleEntry.h"
 
 @interface ESDebugConsole ()
@@ -57,10 +56,7 @@
 {
 	[self.popoverController dismissPopoverAnimated:NO];
 	self.popoverController = nil;
-	if ([self.navigationController respondsToSelector:@selector(dismissViewControllerAnimated:completion:)])
-		[self.navigationController dismissViewControllerAnimated:YES completion:nil];
-	else
-		[self.navigationController dismissModalViewControllerAnimated:YES];
+	[self.navigationController dismissViewControllerAnimated:YES completion:nil];
 	self.navigationController = nil;
 }
 
@@ -68,23 +64,30 @@
 
 - (void)gestureRecognized:(UIGestureRecognizer *)gestureRecognizer
 {
-	if (gestureRecognizer.state != UIGestureRecognizerStateEnded)
+	if (gestureRecognizer.state == UIGestureRecognizerStateRecognized)
+		[self showFromView:gestureRecognizer.view];
+}
+
+- (void)showFromView:(UIView *)view
+{
+	if (view == nil)
+	{
 		return;
-	
+	}
 	if (ISPAD)
 	{
 		if ([self.popoverController isPopoverVisible])
 			return;
 		[self.popoverController presentPopoverFromRect:CGRectMake(0, 0, 10, 10) 
-												inView:gestureRecognizer.view 
+												inView:view
 							  permittedArrowDirections:UIPopoverArrowDirectionAny 
 											  animated:YES];
 	}
 	else if (ISPHONE)
 	{
-		if (self.window.rootViewController.modalViewController != nil)
+		if (self.window.rootViewController.presentedViewController != nil)
 			return;
-		[self.window.rootViewController presentModalViewController:self.navigationController animated:YES];
+		[self.window.rootViewController presentViewController:self.navigationController animated:YES completion:nil];
 	}
 }
 
@@ -100,11 +103,9 @@
 	if (_gestureRecognizer != gestureRecognizer)
 	{
 		if (_gestureRecognizer != nil)
+		{
 			[((UIGestureRecognizer *)_gestureRecognizer).view removeGestureRecognizer:_gestureRecognizer];
-		NO_ARC(
-			   [_gestureRecognizer release];
-			   [gestureRecognizer retain];
-			   )
+		}
 		_gestureRecognizer = gestureRecognizer;
 	}
 }
@@ -149,7 +150,6 @@
 	rotationGesture.cancelsTouchesInView = NO;
 	self.gestureRecognizer = rotationGesture;
 	[window addGestureRecognizer:rotationGesture];
-	NO_ARC([rotationGesture release];)
 	
 	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(lowMemoryWarning:) name:UIApplicationDidReceiveMemoryWarningNotification object:nil];
 }
@@ -157,12 +157,6 @@
 - (void)iOSDealloc
 {
 	[[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationDidReceiveMemoryWarningNotification object:nil];
-	NO_ARC(
-		   [_window release];
-		   [_popoverController release];
-		   [_navigationController release];
-		   [_gestureRecognizer release];
-		   )
 }
 
 #pragma mark - Accessors
@@ -176,10 +170,6 @@
 {
 	if (_window != window)
 	{
-		NO_ARC(
-			   [window retain];
-			   [_window release];
-			   )
 		_window = window;
 	}
 }
@@ -199,10 +189,6 @@
 {
 	if (_popoverController != popoverController)
 	{
-		NO_ARC(
-			   [popoverController retain];
-			   [_popoverController release];
-			   )
 		_popoverController = popoverController;
 	}
 }
@@ -215,7 +201,6 @@
 		if (!CGSizeEqualToSize(self.consoleSizeInPopover, CGSizeZero))
 			tvc.contentSizeForViewInPopover = self.consoleSizeInPopover;
 		_navigationController = [[UINavigationController alloc] initWithRootViewController:tvc];
-		NO_ARC([tvc release];)
 	}
 	return _navigationController;
 }
@@ -224,10 +209,6 @@
 {
 	if (_navigationController != navigationController)
 	{
-		NO_ARC(
-			   [navigationController retain];
-			   [_navigationController release];
-			   )
 		_navigationController = navigationController;
 	}
 }
@@ -240,23 +221,9 @@
 
 #pragma mark - 
 
-- (void)dealloc
-{
-	NO_ARC(
-		   [_allApplicationLogs release];
-		   [_allApps release];
-		   [super dealloc];
-		   )
-}
-
-#pragma mark - 
-
 - (void)done:(id)sender
 {
-	if ([self respondsToSelector:@selector(dismissViewControllerAnimated:completion:)])
-		[self dismissViewControllerAnimated:YES completion:nil];
-	else
-		[self dismissModalViewControllerAnimated:YES];
+	[self dismissViewControllerAnimated:YES completion:nil];
 }
 
 - (void)refresh:(id)sender
@@ -264,9 +231,7 @@
 	UIActivityIndicatorView *activity = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleWhite];
 	[activity startAnimating];
 	UIBarButtonItem *activityButton = [[UIBarButtonItem alloc] initWithCustomView:activity];
-	NO_ARC([activity release];)
 	self.navigationItem.leftBarButtonItem = activityButton;
-	NO_ARC([activityButton release];)
 	dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^(void) {
 		NSDictionary *logs = [ESDebugConsole getConsole];
 		dispatch_async(dispatch_get_main_queue(), ^(void) {
@@ -274,11 +239,9 @@
 			NSMutableArray *allApps = [[self.allApplicationLogs allKeys] mutableCopy];
 			[allApps removeObject:kESDebugConsoleAllLogsKey];
 			self.allApps = allApps;
-			NO_ARC([allApps release];)
 			[self.tableView reloadData];
 			UIBarButtonItem *refreshButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemRefresh target:self action:@selector(refresh:)];
 			self.navigationItem.leftBarButtonItem = refreshButton;
-			NO_ARC([refreshButton release];)
 		});
 	});
 }
@@ -295,7 +258,6 @@
 	{
 		UIBarButtonItem *doneButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone target:self action:@selector(done:)];
 		self.navigationItem.rightBarButtonItem = doneButton;
-		NO_ARC([doneButton release];)
 	}
 	
 	if ([[ESDebugConsole sharedDebugConsole] respondsToSelector:@selector(sendConsoleAsEmail)])
@@ -307,11 +269,8 @@
 		}
 		else
 		{
-			self.toolbarItems = [NSArray arrayWithObjects:
-								 email,
-								 nil];
+			self.toolbarItems = [NSArray arrayWithObjects:email, nil];
 		}
-		NO_ARC([email release];)
 		[self.navigationController setToolbarHidden:NO animated:NO];
 	}
 	
@@ -342,7 +301,6 @@
 	if (cell == nil)
 	{
 		cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:reuseIdentifier];
-		NO_ARC([cell autorelease];)
 	}
 	
 	switch (indexPath.row) {
@@ -385,7 +343,6 @@
 			break;
 	}
 	[self.navigationController pushViewController:tvc animated:YES];
-	NO_ARC([tvc release];)
 }
 
 #pragma mark - 
@@ -399,7 +356,6 @@
 
 - (void)email:(UIBarButtonItem *)sender
 {
-	NO_ARC([sender retain];)
 	UIActivityIndicatorView *activity = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleWhite];
 	[activity startAnimating];
 	UIBarButtonItem *activityButton = [[UIBarButtonItem alloc] initWithCustomView:activity];
@@ -407,10 +363,6 @@
 		self.navigationItem.rightBarButtonItem = activityButton;
 	else
 		self.toolbarItems = [NSArray arrayWithObjects:activityButton, nil];
-	NO_ARC(
-		   [activity release];
-		   [activityButton release];
-		   )
 	dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^(void) {
 		NSArray *logs = [[ESDebugConsole getConsole] objectForKey:kESDebugConsoleAllLogsKey];
 		dispatch_async(dispatch_get_main_queue(), ^(void) {
@@ -420,7 +372,6 @@
 				self.navigationItem.rightBarButtonItem = sender;
 			else
 				self.toolbarItems = [NSArray arrayWithObjects:sender, nil];
-			NO_ARC([sender release];)
 		});
 	});
 }
@@ -432,17 +383,6 @@
 @synthesize applicationLogs=_applicationLogs;
 @synthesize segmentedControl=_segmentedControl;
 @synthesize autoRefreshTimer=_autoRefreshTimer;
-
-#pragma mark - 
-
-- (void)dealloc
-{
-	NO_ARC(
-		   [_applicationLogs release];
-		   [_segmentedControl release];
-		   [super dealloc];
-		   )
-}
 
 #pragma mark - 
 
@@ -472,7 +412,6 @@
 	{
 		UIBarButtonItem *email = [[UIBarButtonItem alloc] initWithTitle:@"Email Logs" style:UIBarButtonItemStyleBordered target:self action:@selector(email:)];
 		self.navigationItem.rightBarButtonItem = email;
-		NO_ARC([email release];)
 	}
 	
 	self.toolbarItems = [NSArray arrayWithObjects:
@@ -481,15 +420,6 @@
 						 autoRefreshSwitchButton,
 						 spaceRight,
 						 nil];
-	
-	NO_ARC(
-		   [spaceLeft release];
-		   [autoRefreshLabel release];
-		   [autoRefreshLabelButton release];
-		   [autoRefreshSwitch release];
-		   [autoRefreshSwitchButton release];
-		   [spaceRight release];
-		   )
 }
 
 - (void)viewWillAppear:(BOOL)animated
@@ -522,7 +452,6 @@
 	if (cell == nil)
 	{
 		cell = [[ESDebugTableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:reuseIdentifier];
-		NO_ARC([cell autorelease];)
 	}
 	
 	ESConsoleEntry *entry = [self.applicationLogs objectAtIndex:indexPath.row];
@@ -541,14 +470,13 @@
     detailViewController.contentSizeForViewInPopover = self.contentSizeForViewInPopover;
 	detailViewController.textView.text = [NSString stringWithFormat:@"%@", [self.applicationLogs objectAtIndex:indexPath.row]];
 	[self.navigationController pushViewController:detailViewController animated:YES];
-	NO_ARC([detailViewController release];)
 }
 
 - (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
 {
 	// This assumes that the table view cells content view is as wide as the actual table,
 	// which isn't necessarily true, but works fine here
-	CGSize size = [[[self.applicationLogs objectAtIndex:indexPath.row] shortMessage] sizeWithFont:[UIFont systemFontOfSize:17] constrainedToSize:CGSizeMake(self.tableView.frame.size.width - 20, 10000) lineBreakMode:UILineBreakModeWordWrap];
+	CGSize size = [[[self.applicationLogs objectAtIndex:indexPath.row] shortMessage] sizeWithFont:[UIFont systemFontOfSize:17] constrainedToSize:CGSizeMake(self.tableView.frame.size.width - 20, 10000) lineBreakMode:NSLineBreakByWordWrapping];
 	// add in the padding for the applicationIdentifier and date
 	size.height += 60;
 	return size.height;
@@ -624,16 +552,6 @@
 	return self;
 }
 
-- (void)dealloc
-{
-	NO_ARC(
-		   [_applicationIdentifierLabel release];
-		   [_messageLabel release];
-		   [_dateLabel release];
-		   [super dealloc];
-		   )
-}
-
 #pragma mark - 
 
 - (void)layoutSubviews
@@ -643,7 +561,7 @@
 	self.applicationIdentifierLabel.frame = CGRectMake(10, 10, self.contentView.frame.size.width - 20, 18);
 	CGSize size = CGSizeMake(self.contentView.frame.size.width - 20, 18);
 	if (self.messageLabel.text.length)
-		size = [self.messageLabel.text sizeWithFont:[self.messageLabel font] constrainedToSize:CGSizeMake(size.width, 10000) lineBreakMode:UILineBreakModeWordWrap];
+		size = [self.messageLabel.text sizeWithFont:[self.messageLabel font] constrainedToSize:CGSizeMake(size.width, 10000) lineBreakMode:NSLineBreakByWordWrapping];
 	self.messageLabel.frame = CGRectMake(10, 30, size.width, size.height);
 	self.dateLabel.frame = CGRectMake(10, CGRectGetMaxY(self.messageLabel.frame), self.contentView.frame.size.width - 20, 18);
 }

@@ -18,7 +18,6 @@
 
 #import "ESConsoleEntry.h"
 #import <asl.h>
-#import "ARCLogic.h"
 
 @implementation ESConsoleEntry
 @synthesize message=_message;
@@ -35,7 +34,6 @@
 	{
 		if (dictionary == nil)
 		{
-			NO_ARC([self release];)
 			self = nil;
 			return nil;
 		}
@@ -51,17 +49,6 @@
 		self.date = [NSDate dateWithTimeIntervalSince1970:[[dictionary objectForKey:[NSString stringWithCString:ASL_KEY_TIME encoding:NSUTF8StringEncoding]] doubleValue]];
 	}
 	return self;
-}
-
-- (void)dealloc
-{
-	NO_ARC(
-		   [_message release];
-		   [_shortMessage release];
-		   [_applicationIdentifier release];
-		   [_date release];
-		   [super dealloc];
-		   )
 }
 
 #pragma mark -

@@ -19,7 +19,6 @@
 #import "ESDebugConsole+iOS_Mail.h"
 #import "ESDebugConsole+iOS_GUI.h"
 #import <MessageUI/MessageUI.h>
-#import "ARCLogic.h"
 
 @implementation ESDebugConsole (iOS_Mail)
 
@@ -34,10 +33,6 @@
 {
 	if (_recipients != recipients)
 	{
-		NO_ARC(
-			   [recipients retain];
-			   [_recipients release];
-			   )
 		_recipients = recipients;
 	}
 }
@@ -51,10 +46,6 @@
 {
 	if (_subject != subject)
 	{
-		NO_ARC(
-			   [subject retain];
-			   [_subject release];
-			   )
 		_subject = subject;
 	}
 }
@@ -68,10 +59,6 @@
 {
 	if (_message != message)
 	{
-		NO_ARC(
-			   [message retain];
-			   [_message release];
-			   )
 		_message = message;
 	}
 }
@@ -85,10 +72,6 @@
 {
 	if (_attachment != attachment)
 	{
-		NO_ARC(
-			   [attachment retain];
-			   [_attachment release];
-			   )
 		_attachment = attachment;
 	}
 }
@@ -105,7 +88,7 @@
 		[picker addAttachmentData:self.attachment mimeType:@"octet/stream" fileName:@"console.log"];
 	if (self.message)
 		[picker setMessageBody:self.message isHTML:NO];
-	[self.navigationController presentModalViewController:picker animated:YES];
+	[self.navigationController presentViewController:picker animated:YES completion:nil];
 }
 
 - (void)mailComposeController:(MFMailComposeViewController *)controller didFinishWithResult:(MFMailComposeResult)result error:(NSError *)error 
@@ -124,7 +107,7 @@
             break;
     }
 	controller.delegate = nil;
-    [controller dismissModalViewControllerAnimated:YES];
+	[controller dismissViewControllerAnimated:YES completion:nil];
 }
 
 @end
